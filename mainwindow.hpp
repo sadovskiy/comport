@@ -33,6 +33,8 @@ private slots:
 
     void serialWriten(qint64 data);
 
+    void finish();
+
     void load();
     void save();
 

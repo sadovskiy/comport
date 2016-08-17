@@ -8,6 +8,7 @@
 #include <QSettings>
 #include <QDebug>
 #include <QList>
+#include <unistd.h>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -15,6 +16,16 @@ MainWindow::MainWindow(QWidget *parent) :
     serial(new QSerialPort(this))
 {
     ui->setupUi(this);
+
+    connect(serial, SIGNAL(readyRead()),
+            this, SLOT(serialReceived()));
+    connect(serial, SIGNAL(bytesWritten(qint64)),
+            this, SLOT(serialWriten(qint64)));
+    connect(serial, SIGNAL(readChannelFinished()),
+            this, SLOT(finish()));
+
+    connect(ui->savePushButton, SIGNAL(clicked()),
+            this, SLOT(save()));
 
     portIndex.insert(0, 0);
     portString.insert( 0, tr("None") );
@@ -135,14 +146,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->flowControlComboBox->addItem( tr("Software") );
 
 
-    connect(serial, SIGNAL(readyRead()),
-            this, SLOT(serialReceived()));
-    connect(serial, SIGNAL(bytesWritten(qint64)),
-            this, SLOT(serialWriten(qint64)));
-
-    connect(ui->savePushButton, SIGNAL(clicked()),
-            this, SLOT(save()));
-
     if (ui->portsComboBox->count() > 1) {
         load();
         ui->baudRateComboBox->setEnabled(true);
@@ -163,11 +166,19 @@ MainWindow::~MainWindow()
 void MainWindow::on_openPushButton_clicked()
 {
     serial->open(QIODevice::ReadWrite);
-    serial->flush();
+
+    if(serial->isOpen())
+    {
+        qDebug() << "Port is opened!";
+    }
+
+
     if(serial->isWritable())
     {
-        qDebug()<<"Yes, i can write to port!";
+        qDebug() << "Yes, i can write to port!";
     }
+
+
 }
 
 void MainWindow::on_closePushButton_clicked()
@@ -180,16 +191,14 @@ void MainWindow::on_writePushButton_clicked()
     // Записываем данные с конвертацией из формата const char[] в формат HEX
     // QByteArray::fromHex("000BDF2F2F4A32");
 
-    serial->clear(QSerialPort::AllDirections);
-    serial->waitForBytesWritten(5);
+    serial->clear();
+    //    serial->setFlowControl(QSerialPort::HardwareControl);
 
-    const char *str = QByteArray::fromHex(ui->writeDataInPortLineEdit->text().toLatin1());
+    qint64 bytes = serial->write( QByteArray::fromHex(ui->writeDataInPortLineEdit->text().toLatin1()),
+                                  QByteArray::fromHex(ui->writeDataInPortLineEdit->text().toLatin1()).size() );
 
-    qint64 error = serial->write( str, 7 );
-    qDebug() << error;
 
-    serial->flush();
-    //    serial->close();
+    qDebug() << "bytes: " << bytes;
 }
 
 void MainWindow::on_portsComboBox_currentIndexChanged(const QString &arg1)
@@ -217,8 +226,20 @@ void MainWindow::on_portsComboBox_currentIndexChanged(const QString &arg1)
 
 void MainWindow::serialReceived()
 {
-    QByteArray bytes = serial->readAll();
     ui->readValueLabel->clear();
+    int byte = 1;
+
+//    QByteArray bytes = serial->readAll();
+
+
+
+    const qint64 bytesAvailable = serial->bytesAvailable();
+//    if (bytesAvailable < byte)
+//        return;
+    static QByteArray bytes = 0;
+
+    bytes = serial->read(byte);
+
     ui->readValueLabel->setText(bytes.toHex().toUpper());
     qDebug() << QString(bytes.toHex().toUpper());
 }
@@ -226,6 +247,11 @@ void MainWindow::serialReceived()
 void MainWindow::serialWriten(qint64 data)
 {
     qDebug() << "Byte writing: " << data;
+}
+
+void MainWindow::finish()
+{
+    qDebug() << "finis!";
 }
 
 void MainWindow::load()

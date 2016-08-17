@@ -14,8 +14,8 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QGridLayout" name="gridLayout_3">
-    <item row="0" column="0">
+   <layout class="QGridLayout" name="gridLayout_2">
+    <item row="0" column="0" rowspan="5">
      <widget class="QGroupBox" name="setupPortGroupBox">
       <property name="title">
        <string>Setup port</string>
@@ -286,50 +286,64 @@
      </widget>
     </item>
     <item row="0" column="1">
-     <layout class="QGridLayout" name="gridLayout_2">
-      <item row="1" column="0" colspan="2">
-       <layout class="QHBoxLayout" name="openClosePortHorizontalLayout">
-        <item>
-         <widget class="QPushButton" name="openPushButton">
-          <property name="text">
-           <string>Open</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="closePushButton">
-          <property name="text">
-           <string>Close</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
+     <widget class="QLineEdit" name="writeDataInPortLineEdit">
+      <property name="text">
+       <string>000BDF2F2F4A32</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <layout class="QHBoxLayout" name="openClosePortHorizontalLayout">
+      <item>
+       <widget class="QPushButton" name="openPushButton">
+        <property name="text">
+         <string>Open</string>
+        </property>
+       </widget>
       </item>
-      <item row="2" column="0" colspan="2">
-       <layout class="QHBoxLayout" name="writeHorizontalLayout">
-        <item>
-         <widget class="QPushButton" name="writePushButton">
-          <property name="text">
-           <string>Write</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="writeHorizontalSpacer">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
+      <item>
+       <widget class="QPushButton" name="closePushButton">
+        <property name="text">
+         <string>Close</string>
+        </property>
+       </widget>
       </item>
-      <item row="3" column="1">
+     </layout>
+    </item>
+    <item row="2" column="1">
+     <layout class="QHBoxLayout" name="writeHorizontalLayout">
+      <item>
+       <widget class="QPushButton" name="writePushButton">
+        <property name="text">
+         <string>Write</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="writeHorizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item row="3" column="1">
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QLabel" name="readLabel">
+        <property name="text">
+         <string>Read: </string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QLabel" name="readValueLabel">
         <property name="frameShape">
          <enum>QFrame::Box</enum>
@@ -342,34 +356,20 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="readLabel">
-        <property name="text">
-         <string>Read: </string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="1">
-       <spacer name="verticalSpacer">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>40</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="0" column="0" colspan="2">
-       <widget class="QLineEdit" name="writeDataInPortLineEdit">
-        <property name="text">
-         <string>000BDF2F2F4A32</string>
-        </property>
-       </widget>
-      </item>
      </layout>
+    </item>
+    <item row="4" column="1">
+     <spacer name="verticalSpacer">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>381</height>
+       </size>
+      </property>
+     </spacer>
     </item>
    </layout>
   </widget>
