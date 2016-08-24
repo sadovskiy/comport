@@ -13,7 +13,8 @@
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
-    serial(new QSerialPort(this))
+    serial(new QSerialPort(this)),
+    bytes(0)
 {
     ui->setupUi(this);
 
@@ -27,11 +28,14 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->savePushButton, SIGNAL(clicked()),
             this, SLOT(save()));
 
+    // Инициализируем базовые настройки порта перед началом работы.
+    // Для этого нам надо загрузить их из драйвера и записать в соответствующие
+    // объекты окна.
     portIndex.insert(0, 0);
     portString.insert( 0, tr("None") );
     ui->portsComboBox->addItem( tr("None") );
     int index = 1;
-    // Получить список доступных посделовательных портов
+    // Получить список доступных последовательных портов
     foreach (const QSerialPortInfo &info,
              QSerialPortInfo::availablePorts() ) {
         portIndex.insert(index, index);
@@ -42,10 +46,15 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
     QSerialPortInfo info;
+    // Задаём значение по умолчанию, как неизвестную скорость порта
     QSerialPort::BaudRate br = QSerialPort::UnknownBaud;
     baudrateIndex.insert(0, 0);
     baudrateString.insert( 0, tr("None") );
     ui->baudRateComboBox->addItem( tr("None") );
+    // Через цикл делаем запись скоростей в два контейнера.
+    // Первый код самой скорости, второй название, которое будет видить пользователь
+    // в выпадающем списке. За счёт того что ключи у них одинаковые, всегда можно вызвать
+    // один параметр через другой.
     for (int var = 0, index = 1; var < info.standardBaudRates().size(); ++var) {
         qint32 value = info.standardBaudRates().at(var);
         switch (value) {
@@ -83,7 +92,7 @@ MainWindow::MainWindow(QWidget *parent) :
         }
     }
 
-
+    // Для битов данных цикл от 5 до 8, так как других битов данных не бывает
     databitsIndex.insert(0, 0);
     databitsString.insert( 0, tr("None") );
     ui->dataBitsComboBox->addItem( tr("None") );
@@ -95,6 +104,7 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
 
+    // Далее без циклов, так как следующие параметры уникальны.
     parityIndex.insert(0, 0);
     parityString.insert( 0, tr("None") );
     ui->parityComboBox->addItem( tr("None") );
@@ -145,7 +155,8 @@ MainWindow::MainWindow(QWidget *parent) :
     flowcontrolString.insert( 2, tr("Software") );
     ui->flowControlComboBox->addItem( tr("Software") );
 
-
+    // Разблокируем заблокированные по умалчанию выпадающие списки
+    // с настройками порта
     if (ui->portsComboBox->count() > 1) {
         load();
         ui->baudRateComboBox->setEnabled(true);
@@ -184,6 +195,9 @@ void MainWindow::on_openPushButton_clicked()
 void MainWindow::on_closePushButton_clicked()
 {
     serial->close();
+
+    // Выводим прочитанные байты в консоль
+    qDebug() << QString(bytes.toHex().toUpper());
 }
 
 void MainWindow::on_writePushButton_clicked()
@@ -191,14 +205,18 @@ void MainWindow::on_writePushButton_clicked()
     // Записываем данные с конвертацией из формата const char[] в формат HEX
     // QByteArray::fromHex("000BDF2F2F4A32");
 
-    serial->clear();
-    //    serial->setFlowControl(QSerialPort::HardwareControl);
 
-    qint64 bytes = serial->write( QByteArray::fromHex(ui->writeDataInPortLineEdit->text().toLatin1()),
+    bytesAvailable = 0;
+
+    serial->clear();
+
+    qint64 bytesW = serial->write( QByteArray::fromHex(ui->writeDataInPortLineEdit->text().toLatin1()),
                                   QByteArray::fromHex(ui->writeDataInPortLineEdit->text().toLatin1()).size() );
 
+    bytes.clear();
 
-    qDebug() << "bytes: " << bytes;
+
+    qDebug() << "bytes: " << bytesW;
 }
 
 void MainWindow::on_portsComboBox_currentIndexChanged(const QString &arg1)
@@ -226,22 +244,18 @@ void MainWindow::on_portsComboBox_currentIndexChanged(const QString &arg1)
 
 void MainWindow::serialReceived()
 {
-    ui->readValueLabel->clear();
-    int byte = 1;
+    // При каждом появлении байтов будет вызываться данный метод
+    // Так как байты идут с разной скоростью и разной интенсивностью
+    // надо их подсчитывать. Метод не контролирует прочитался ли один байт
+    // или несколько, однако bytesAvailable() всегда говорит сколько было прочитано байт верно.
+    bytesAvailable += serial->bytesAvailable();
 
-//    QByteArray bytes = serial->readAll();
+    // Читайем всё, что пришло в порт дозаписывая массив.
+    bytes += serial->readAll();
+    qDebug() << "Bytes available: " << bytesAvailable;
 
-
-
-    const qint64 bytesAvailable = serial->bytesAvailable();
-//    if (bytesAvailable < byte)
-//        return;
-    static QByteArray bytes = 0;
-
-    bytes = serial->read(byte);
 
     ui->readValueLabel->setText(bytes.toHex().toUpper());
-    qDebug() << QString(bytes.toHex().toUpper());
 }
 
 void MainWindow::serialWriten(qint64 data)
@@ -251,7 +265,7 @@ void MainWindow::serialWriten(qint64 data)
 
 void MainWindow::finish()
 {
-    qDebug() << "finis!";
+    qDebug() << "finish!";
 }
 
 void MainWindow::load()
@@ -298,10 +312,12 @@ void MainWindow::writeSettings()
 
 void MainWindow::setPortSettings()
 {
+    // Задаём настройки порта отыскивая по индексу нужный параметр в контейнере.
     QString port = "None";
     port = portString.find(ui->portsComboBox->currentIndex()).value();
     serial->setPortName(port);
 
+    // По умолчанию задаём параметр как неизвестный.
     QSerialPort::BaudRate br = QSerialPort::UnknownBaud;
     br = (QSerialPort::BaudRate)baudrateIndex.find(ui->baudRateComboBox->currentIndex()).value();
     serial->setBaudRate(br);
@@ -325,6 +341,7 @@ void MainWindow::setPortSettings()
 
 void MainWindow::getPortSettings()
 {
+    // Проверяем текущие настройки порта
     qDebug() << serial->portName();
     qDebug() << serial->baudRate();
     qDebug() << serial->dataBits();
